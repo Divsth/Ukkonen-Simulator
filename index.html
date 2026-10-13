@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ukkonen's Algorithm Runner</title>
+<style>
+:root{--bg:#f6f5f1;--bg2:#e9e6dd;--fg:#1d1d1b;--mut:#77766f;--card:rgba(255,255,255,.72);--bd:rgba(0,0,0,.09);--ac:#2f6fed;--ok:#1e9e5a;--hl:#e8730c;--lk:#9b4fd0;--chip:rgba(0,0,0,.05);--sh:0 8px 30px rgba(0,0,0,.08);box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121317;--bg2:#1c1e26;--fg:#ececea;--mut:#8f8f89;--card:rgba(34,36,44,.72);--bd:rgba(255,255,255,.09);--ac:#6f9bff;--ok:#3fcf85;--hl:#ff9a3d;--lk:#c58bf2;--chip:rgba(255,255,255,.06);--sh:0 8px 30px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--bg:#121317;--bg2:#1c1e26;--fg:#ececea;--mut:#8f8f89;--card:rgba(34,36,44,.72);--bd:rgba(255,255,255,.09);--ac:#6f9bff;--ok:#3fcf85;--hl:#ff9a3d;--lk:#c58bf2;--chip:rgba(255,255,255,.06);--sh:0 8px 30px rgba(0,0,0,.4)}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:radial-gradient(1200px 700px at 50% 45%,var(--bg2),var(--bg));color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#app{height:100%;display:grid;grid-template-columns:270px 1fr;grid-template-rows:auto 1fr auto;gap:14px;padding:calc(16px + env(safe-area-inset-top,0px)) 18px calc(14px + env(safe-area-inset-bottom,0px))}
+header{grid-column:1/3;display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.brand h1{font-size:17px;margin:0 0 8px;font-weight:650;letter-spacing:-.01em}.brand .hint{display:block;margin-top:5px}
+.row{display:flex;gap:6px;align-items:center}
+input[type=text]{font:15px ui-monospace,Menlo,monospace;padding:7px 10px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--fg);width:170px;outline:none}
+input[type=text]:focus{border-color:var(--ac)}
+button{font:inherit;padding:6px 12px;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--fg);cursor:pointer;backdrop-filter:blur(8px);transition:.15s}
+button:hover:not(:disabled){border-color:var(--ac);transform:translateY(-1px)}button:disabled{opacity:.35;cursor:default}
+button.pri,.seg button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.hint{color:var(--mut);font-size:12px}
+#chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;max-width:70vw}
+.ch{font:600 34px/1.1 ui-monospace,Menlo,monospace;background:var(--chip);border-radius:10px;padding:6px 12px 2px;text-align:center;color:var(--mut);transition:.2s}
+.ch small{display:block;font:11px/14px system-ui;color:var(--mut);font-weight:400}
+.ch.d{color:var(--fg)}.ch.c{background:var(--ac);color:#fff;transform:translateY(-3px);box-shadow:var(--sh)}.ch.c small{color:#fff}.ch.sf{box-shadow:inset 0 -4px var(--hl);color:var(--fg)}
+aside{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto}
+.seg{display:flex;flex-direction:column;gap:8px}.seg button{text-align:left;padding:9px 12px}.seg b{font-weight:650}.seg small{display:block;opacity:.75;font-size:11.5px;line-height:1.3}
+.panel{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;box-shadow:var(--sh);backdrop-filter:blur(10px)}
+#info p{margin:6px 0 2px;font-size:13px}.ap{font:12px ui-monospace,Menlo,monospace;color:var(--mut);margin-top:6px}
+.rule{display:inline-block;padding:0 8px;border-radius:10px;color:#fff;font-size:11px;font-weight:600;margin-left:6px}
+.r1{background:#6b7a8f}.r2{background:var(--ok)}.r3{background:var(--hl)}
+#tv{min-height:0;height:100%}#tv svg{display:block}main{min-height:0;position:relative}
+svg text{font-family:ui-monospace,Menlo,monospace}
+.ed{stroke:var(--mut);stroke-width:2;stroke-linecap:round}.ed.new{stroke:var(--ok);stroke-width:3.2}.ed.hl{stroke:var(--hl);stroke-width:4}
+.el{font-size:15px;fill:var(--fg);text-anchor:middle;paint-order:stroke;stroke:var(--bg);stroke-width:5px}
+.el.new{fill:var(--ok);font-weight:700}.el.hl{fill:var(--hl);font-weight:700}
+.nd{fill:var(--bg);stroke:var(--mut);stroke-width:2}.nd.new{stroke:var(--ok);stroke-width:3.5}.nd.act{stroke:var(--ac);stroke-width:4}
+.nt{font-size:12px;text-anchor:middle;fill:var(--fg)}
+.lk{fill:none;stroke:var(--lk);stroke-width:1.8;stroke-dasharray:5 4}
+footer{grid-column:1/3;display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative}
+.ctl{display:flex;gap:8px;align-items:center;padding:8px 12px;margin:0 auto;border-radius:16px;background:var(--card);border:1px solid var(--bd);box-shadow:var(--sh);backdrop-filter:blur(10px);flex-wrap:wrap;justify-content:center}
+.legend{position:absolute;left:0;bottom:0;display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--mut)}
+.legend i{display:inline-block;width:16px;height:4px;vertical-align:middle;margin-right:6px;border-radius:2px}
+#cmp{position:absolute;right:0;bottom:0}
+#tbl{position:absolute;right:0;bottom:52px;width:min(480px,92vw);display:none;z-index:5;font-size:13px}#tbl.open{display:block}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:4px 7px;border-bottom:1px solid var(--bd)}tr.on td{background:var(--chip);font-weight:600}
+input[type=range]{width:90px}
+@media (max-width:860px){body{overflow:auto}#app{height:auto;min-height:100%;grid-template-columns:1fr}header{grid-column:1;flex-direction:column}#chips{justify-content:flex-start;max-width:100%}.ch{font-size:24px}main{height:60vh}footer{grid-column:1;flex-direction:column}.legend,#cmp{position:static}}
+</style></head><body><div id="app">
+<header>
+ <div class="brand"><h1>Ukkonen · suffix tree</h1>
+  <div class="row"><input type="text" id="inp" value="banana" maxlength="22" spellcheck="false" autocomplete="off"><button class="pri" id="load">Build</button></div>
+  <span class="hint">a unique $ is appended · max 22 chars</span></div>
+ <div id="chips"></div>
+</header>
+<aside>
+ <div class="seg" id="seg">
+  <button data-m="1"><b>O(n³)</b> naive<small>no tricks: every extension re-walks from the root, char by char</small></button>
+  <button data-m="2"><b>O(n²)</b> suffix links<small>+ suffix links<br>+ skip/count (hop whole edges by length)</small></button>
+  <button data-m="3"><b>O(n)</b> Ukkonen<small>+ suffix links, skip/count<br>+ edge-label compression: leaf edges store (start, shared end), so leaves grow for free<br>+ stop the phase at the first Rule 3</small></button>
+ </div>
+ <div class="panel" id="info"></div>
+</aside>
+<main><div id="tv"></div></main>
+<footer>
+ <div class="legend"><span><i style="background:var(--hl)"></i>current edge</span><span><i style="background:var(--ok)"></i>new / changed</span><span><i style="background:var(--lk)"></i>suffix link</span></div>
+ <div class="ctl"><button id="rst" title="Restart">⏮</button><button id="bk">◀ Back</button><button class="pri" id="fw">Step ▶</button><button id="pl">▶▶ Play</button><button id="end" title="Finish">⏭</button>
+  <input type="range" id="sp" min="80" max="1500" value="500" title="delay"><span class="hint" id="cnt"></span></div>
+ <button id="cmp">Compare work</button>
+ <div class="panel" id="tbl"></div>
+</footer>
+</div>
+<script>
+const INF=1e9,DEF='banana';
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function makeRun(s,mode){
+ const n=s.length,st={ops:0,tick:0,i:-1,j:-1,gend:-1,ap:null,nid:0};
+ const T=()=>st.tick+1;
+ const nn=()=>({id:st.nid++,ch:{},link:null,idx:-1,leaf:false,born:T()});
+ const root=nn();root.born=0;st.root=root;
+ const elen=e=>(e.e===INF?st.gend:e.e)-e.s+1;
+ const mk=(a,b,to)=>({s:a,e:b,to,born:T()});
+ const X=(a,b)=>a>b?'ε':'"'+s.slice(a,b+1)+'"';
+ const nm=v=>v===root?'root':'node '+v.id;
+ function apply(node,edge,off,last,i,j){
+  const c=s[i],LE=mode===3?INF:i,P=X(j,i-1);
+  if(edge){
+   const y=s[edge.s+off];
+   if(y===c)return{rule:3,hlE:edge,msg:`Rule 3: ${P} is already followed by '${c}' (mid-edge) → nothing to do.`};
+   const w=nn(),rest=mk(edge.s+off,edge.e,edge.to);
+   edge.e=edge.s+off-1;edge.to=w;edge.born=T();w.ch[s[rest.s]]=rest;
+   const l=nn();l.leaf=true;l.idx=j;const le=mk(i,LE,l);w.ch[c]=le;
+   return{rule:2,w,loc:w,hlE:le,msg:`Rule 2: ${P} is followed by '${y}', not '${c}' → split the edge, new internal node ${w.id}, new leaf ${l.id} for suffix ${j}.`};
+  }
+  if(node.leaf){last.e=LE;last.born=T();return{rule:1,hlE:last,msg:`Rule 1: ${P} ends at a leaf → append '${c}' to that leaf edge.`}}
+  const ex=node.ch[c];
+  if(ex)return{rule:3,hlE:ex,msg:`Rule 3: ${P}+'${c}' already exists below ${nm(node)} → nothing to do.`};
+  const l=nn();l.leaf=true;l.idx=j;const le=mk(i,LE,l);node.ch[c]=le;
+  return{rule:2,hlE:le,msg:`Rule 2: no '${c}' edge below ${nm(node)} → new leaf ${l.id} for suffix ${j}.`};
+ }
+ function* g1(){
+  for(let i=0;i<n;i++){st.i=i;st.gend=i;
+   for(let j=0;j<=i;j++){st.j=j;
+    let node=root,k=j,edge=null,off=0,last=null;
+    while(k<i){edge=node.ch[s[k]];const len=elen(edge);let m=0;
+     while(m<len&&k<i){st.ops++;m++;k++}
+     if(m<len){off=m;break}last=edge;node=edge.to;edge=null}
+    st.ops++;
+    const r=apply(node,edge,off,last,i,j);st.tick++;
+    r.msg=`Walked ${X(j,i-1)} from the root char by char (${i-j} compares). `+r.msg;yield r;
+   }}
+ }
+ function* g2(){
+  let base=null,pend=null;
+  for(let i=0;i<n;i++){st.i=i;st.gend=i;
+   for(let j=0;j<=i;j++){st.j=j;st.ops++;
+    let node=root,ks=0,L=0,par=null,pe=null,edge=null,off=0,how='';
+    if(j<i){
+     if(j===0){L=i;how=`Skip/count ${X(0,i-1)} down from the root`}
+     else if(base.p===root){ks=base.ks+1;L=base.L-1;how='Parent was the root: drop the first char, skip/count from the root'}
+     else{node=base.p.link||root;ks=base.ks;L=base.L;how=`Took suffix link of node ${base.p.id} → ${nm(node)}, then skip/count down`}
+     while(L>0){const e=node.ch[s[ks]];st.ops++;const len=elen(e);
+      if(L>=len){par=node;pe=e;node=e.to;ks+=len;L-=len}else{edge=e;off=L;break}}
+     base=edge?{p:node,ks:edge.s,L:off}:{p:par,ks:pe.s,L:elen(pe)};
+    }else how='Empty suffix: look at the root';
+    const r=apply(node,edge,off,pe,i,j);
+    const loc=r.loc||(edge?null:node);let extra='';
+    if(pend&&loc){pend.link=loc;extra=` Suffix link ${pend.id} → ${nm(loc)}.`;pend=null}
+    if(r.w)pend=r.w;
+    st.tick++;r.msg=how+'. '+r.msg+extra;yield r;
+   }}
+ }
+ function* g3(){
+  let an=root,ae=0,al=0,rem=0;
+  const ap=()=>({an:an.id,edge:al>0?s[ae]:'—',len:al,rem});
+  for(let i=0;i<n;i++){st.i=i;st.gend=i;rem++;let lastNew=null,note='';
+   while(rem>0){
+    if(al===0)ae=i;
+    const edge=an.ch[s[ae]];
+    if(edge&&al>=elen(edge)){const L=elen(edge);st.ops++;note+=`Walk down: active node → ${edge.to.id}. `;ae+=L;al-=L;an=edge.to;continue}
+    const j=i-rem+1,r0=rem;st.j=j;st.ops++;
+    const r=apply(an,edge&&al>0?edge:null,al,null,i,j);
+    let extra='';
+    if(r.rule===3){
+     if(lastNew&&an!==root){lastNew.link=an;extra=` Suffix link ${lastNew.id} → ${an.id}.`;lastNew=null}
+     al++;st.ap=ap();st.tick++;
+     r.msg=`Remainder ${r0}. ${note}${r.msg}${extra} Active length++ and STOP the phase: the other ${r0-1} suffix(es) are implicit (showstopper).`;yield r;break}
+    const loc=r.loc||an;
+    if(lastNew){lastNew.link=loc;extra=` Suffix link ${lastNew.id} → ${nm(loc)}.`;lastNew=null}
+    if(r.w)lastNew=r.w;
+    rem--;
+    if(an===root&&al>0){al--;ae=i-rem+1}else if(an!==root)an=an.link||root;
+    st.ap=ap();st.tick++;
+    r.msg=`Remainder ${r0}. ${note}${r.msg}${extra} Move active point to the next suffix.`;note='';yield r;
+   }
+  }
+ }
+ return{st,gen:[g1,g2,g3][mode-1]()};
+}
+function totals(s,m){const r=makeRun(s,m);let c=0;while(!r.gen.next().done)c++;return{steps:c,ops:r.st.ops}}
+
+const S={str:'',mode:3,run:null,k:0,cur:null,tot:{},timer:null};
+const $=id=>document.getElementById(id);
+function replay(k){
+ S.run=makeRun(S.str,S.mode);S.k=0;S.cur=null;
+ while(S.k<k){S.cur=S.run.gen.next().value;S.k++}
+ render();
+}
+function load(str,mode,toEnd){
+ stop();S.str=str+'$';S.mode=mode;
+ S.tot={1:totals(S.str,1),2:totals(S.str,2),3:totals(S.str,3)};
+ replay(toEnd?S.tot[mode].steps:0);
+}
+function stop(){if(S.timer){clearInterval(S.timer);S.timer=null;$('pl').textContent='▶▶ Play'}}
+function step(){
+ if(S.k>=S.tot[S.mode].steps){stop();return}
+ S.cur=S.run.gen.next().value;S.k++;render();
+}
+
+function render(){
+ const st=S.run.st,s=S.str,n=s.length,tot=S.tot[S.mode].steps,fin=S.k===tot,i=fin?n:st.i;
+ document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',+b.dataset.m===S.mode));
+ $('chips').innerHTML=[...s].map((c,x)=>{let cl='ch';
+  if(S.k>0){if(x<i)cl+=' d';else if(x===i)cl+=' c';if(S.mode<3&&!fin&&x>=st.j&&x<st.i)cl+=' sf'}
+  return`<span class="${cl}">${esc(c)}<small>${x}</small></span>`}).join('');
+ let h;
+ if(S.k===0)h='<p>Ready. Press <b>Step ▶</b> to begin phase 1, or change the string above.</p>';
+ else{
+  h=`<div><b>Phase ${st.i+1}/${n}</b>: add '${esc(s[st.i])}' to the tree of <code>${esc(s.slice(0,st.i))}</code>
+  &nbsp;·&nbsp;<b>${S.mode===3?'Suffix':'Extension'} ${st.j}</b><span class="rule r${S.cur.rule}">Rule ${S.cur.rule}</span></div><p>${esc(S.cur.msg)}</p>`;
+  if(S.mode===3&&st.ap)h+=`<div class="ap">active node: ${st.ap.an}${st.ap.an===0?' (root)':''} · active edge: ${esc(st.ap.edge)} · active length: ${st.ap.len} · remainder: ${st.ap.rem}</div>`;
+  if(fin)h+='<p style="color:var(--ok);font-weight:600">✔ Done: this is the full suffix tree.</p>';
+ }
+ h+=`<div class="ap">work units so far: ${st.ops}</div>`;
+ $('info').innerHTML=h;
+ $('cnt').textContent=`step ${S.k} / ${tot}`;
+ $('bk').disabled=S.k===0;$('rst').disabled=S.k===0;$('fw').disabled=fin;$('end').disabled=fin;$('pl').disabled=fin;
+ drawTree(st,s);drawTable(n);
+}
+
+function drawTree(st,s){
+ const GAP=34;let yy=18,maxX=0;const nodes=[];
+ const txt=e=>s.slice(e.s,(e.e===INF?st.gend:e.e)+1);
+ (function lay(v,x){
+  v.x=x;maxX=Math.max(maxX,x);nodes.push(v);
+  const ks=Object.keys(v.ch).sort();
+  if(!ks.length){v.y=yy;yy+=GAP;return}
+  for(const k of ks){const e=v.ch[k];e.t=txt(e);lay(e.to,x+Math.max(56,e.t.length*8.4+42))}
+  v.y=(v.ch[ks[0]].to.y+v.ch[ks[ks.length-1]].to.y)/2;
+ })(st.root,34);
+ const hl=S.cur&&S.cur.hlE,fresh=st.tick>0,E=[],N=[],K=[];
+ for(const v of nodes){
+  for(const k of Object.keys(v.ch).sort()){
+   const e=v.ch[k],c=e.to,cls=e===hl?'hl':(fresh&&e.born===st.tick?'new':'');
+   E.push(`<line class="ed ${cls}" x1="${v.x}" y1="${v.y}" x2="${c.x}" y2="${c.y}"/><text class="el ${cls}" x="${(v.x+c.x)/2}" y="${(v.y+c.y)/2-5}">${esc(e.t)}</text>`);
+  }
+  if(v.link){
+   const a=v,b=v.link,mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y;
+   const cx=mx-dy*.25-10,cy=my+dx*.12+14,ux=b.x-cx,uy=b.y-cy,d=Math.hypot(ux,uy)||1;
+   K.push(`<path class="lk" marker-end="url(#ah)" d="M${a.x} ${a.y}Q${cx} ${cy} ${b.x-ux/d*14} ${b.y-uy/d*14}"/>`);
+  }
+  const nw=fresh&&v.born===st.tick,act=st.ap&&S.mode===3&&String(st.ap.an)===String(v.id);
+  const cl='nd'+(act?' act':nw?' new':'');
+  if(v.leaf)N.push(`<rect class="${cl}" x="${v.x-9}" y="${v.y-9}" width="18" height="18" rx="3"/><text class="nt" x="${v.x}" y="${v.y+4}">${v.id}</text>`);
+  else N.push(`<circle class="${cl}" cx="${v.x}" cy="${v.y}" r="13"/><text class="nt" x="${v.x}" y="${v.y+4}">${v.id}</text>`);
+ }
+ const W=Math.max(maxX+70,380),H=Math.max(yy+6,300);
+ $('tv').innerHTML=`<svg style="width:100%;height:100%" preserveAspectRatio="xMidYMid meet" viewBox="0 0 ${W} ${H}"><defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" style="fill:var(--lk)"/></marker></defs>${K.join('')}${E.join('')}${N.join('')}</svg>`;
+}
+
+function drawTable(n){
+ const nm={1:['O(n³) naive','char compares'],2:['O(n²) suffix links','edge hops + extensions'],3:['O(n) Ukkonen','edge hops + extensions']};
+ let h=`<div class="hint" style="margin-bottom:6px">For this string n = ${n} (with $): n³ = ${n**3}, n² = ${n*n}, n = ${n}. Total work to build the complete tree:</div>
+ <table><tr><th>Algorithm</th><th>Extensions performed</th><th>Work units</th><th>Counted as</th></tr>`;
+ for(const m of [1,2,3])h+=`<tr class="${m===S.mode?'on':''}"><td>${nm[m][0]}</td><td>${S.tot[m].steps}</td><td>${S.tot[m].ops}</td><td>${nm[m][1]}</td></tr>`;
+ $('tbl').innerHTML=h+'</table><div class="hint" style="margin-top:6px">Try a long repetitive string such as <code>aaaaaaaaaaaaaaaa</code> or <code>abcabcabcabcabc</code> to watch the gap widen.</div>';
+}
+
+function build(toEnd){
+ let v=$('inp').value.replace(/[\s$]/g,'').slice(0,22);
+ if(!v)v=DEF;$('inp').value=v;load(v,S.mode,!!toEnd);
+}
+$('load').onclick=()=>build(false);
+$('inp').addEventListener('keydown',e=>{if(e.key==='Enter')build(false)});
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{S.mode=+b.dataset.m;build(false)});
+$('fw').onclick=step;$('cmp').onclick=()=>$('tbl').classList.toggle('open');
+$('bk').onclick=()=>{stop();replay(S.k-1)};
+$('rst').onclick=()=>{stop();replay(0)};
+$('end').onclick=()=>{stop();replay(S.tot[S.mode].steps)};
+$('pl').onclick=()=>{
+ if(S.timer){stop();return}
+ $('pl').textContent='⏸ Pause';
+ const tick=()=>{step();if(S.k>=S.tot[S.mode].steps)stop()};
+ S.timer=setInterval(tick,+$('sp').value);
+};
+$('sp').oninput=()=>{if(S.timer){clearInterval(S.timer);S.timer=setInterval(()=>{step();if(S.k>=S.tot[S.mode].steps)stop()},+$('sp').value)}};
+document.addEventListener('keydown',e=>{
+ if(e.target.tagName==='INPUT'&&e.target.type==='text')return;
+ if(e.key==='ArrowRight')step();else if(e.key==='ArrowLeft'&&S.k>0){stop();replay(S.k-1)}
+});
+load(DEF,3,true);
+</script></body></html>
